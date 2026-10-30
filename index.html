@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UL Wallet · Pagos a tiempo (prototipo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ul:#4A5AC9; --ul-dark:#3A47A8; --ul-soft:#E9EBF9; --bg:#F3F4F9; --card:#fff;
+    --ink:#1C1F2E; --muted:#8A8FA3; --line:#E6E8F0; --nav:#1F2335; --yellow:#F5C21B;
+    --red:#D9433B; --red-soft:#FCE9E8; --green:#2DAA5E; --green-soft:#E4F6EA; --amber:#F2A33A; --amber-soft:#FFF4E2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Outfit',system-ui,sans-serif;background:#E4E6EF;color:var(--ink);min-height:100vh}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+  /* ====== Barra del prototipo (fuera del teléfono) ====== */
+  .lab{max-width:1100px;margin:0 auto;padding:18px 16px 40px}
+  .lab-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .lab-head h1{font-size:17px;font-weight:600}
+  .lab-head h1 span{color:var(--muted);font-weight:400}
+  .seg{display:inline-flex;background:#fff;border-radius:999px;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .seg button{padding:7px 14px;border-radius:999px;font-size:13px;color:var(--muted)}
+  .seg button.on{background:var(--ul);color:#fff}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px;font-size:13px}
+  .controls label{color:var(--muted)}
+  .controls select{font:inherit;font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:#fff}
+  .controls .reset{padding:7px 12px;border-radius:8px;background:#fff;border:1px solid var(--line)}
+  .stage{display:flex;gap:28px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+
+  /* ====== Teléfono ====== */
+  .phone{width:390px;height:844px;background:var(--bg);border-radius:36px;border:10px solid #15171f;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.25);display:flex;flex-direction:column}
+  .status{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;background:#fff}
+  .status .pill{background:#2b2b2b;color:#fff;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:500}
+  .screen{flex:1;overflow-y:auto;position:relative}
+  .screen::-webkit-scrollbar{display:none}
+  .nav{height:64px;background:var(--nav);display:flex;align-items:center;justify-content:space-around;padding:0 10px}
+  .nav button{width:84px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff}
+  .nav button.on{background:var(--ul)}
+  .nav svg{width:24px;height:24px}
+
+  /* ====== Componentes de la app ====== */
+  .topbar{background:#fff;padding:14px 20px 18px;display:flex;align-items:center;gap:12px}
+  .avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#C9CDF2,#9BA3E6);display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;font-size:18px;flex-shrink:0}
+  .hello{flex:1;color:var(--ul)}
+  .hello b{display:block;font-size:17px;font-weight:600}
+  .hello span{font-size:14px}
+  .topbar .ic{display:flex;gap:16px;color:var(--ul)}
+  .topbar .ic button{position:relative}
+  .topbar .ic svg{width:26px;height:26px}
+  .dot{position:absolute;top:-3px;right:-4px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid #fff}
+  .pad{padding:0 20px}
+  .ttl{font-size:19px;font-weight:600;margin:22px 0 10px}
+  .card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(20,25,60,.06)}
+  .empty{color:var(--muted);text-align:center;padding:12px 10px;font-size:15px}
+  .banner{margin:14px 20px 0;height:200px;border-radius:14px;background:linear-gradient(120deg,#5B6AD6,#8A95E3 60%,#C7CCF0);color:#fff;padding:22px 18px;position:relative;overflow:hidden}
+  .banner h3{font-size:18px;color:#D9F58A;text-align:center;font-weight:600}
+  .banner p{text-align:center;font-size:13px;margin-top:4px}
+  .banner .qr{position:absolute;left:18px;right:18px;bottom:18px;height:80px;background:#fff;border-radius:6px;color:#333;font-size:9px;padding:8px 10px;display:flex;justify-content:space-between}
+  .banner .qr i{width:52px;height:52px;background:repeating-conic-gradient(#222 0 25%,#fff 0 50%) 0 0/8px 8px;border:3px solid #fff;outline:1px solid #222}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+  .dots i{width:6px;height:6px;border-radius:50%;background:#C4C7D9}.dots i:first-child{background:var(--ul)}
+  .cal{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .cal .card{text-align:center;padding:16px 8px}
+  .cal .m{color:var(--ul);font-size:17px}.cal .d{font-size:26px;font-weight:700}.cal .d small{color:var(--ul);font-size:15px;font-weight:400}
+  .link{color:var(--ul);text-align:right;font-size:15px;margin:14px 20px 24px}
+
+  /* Aviso de adeudo */
+  .aviso{margin:14px 20px 0;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+  .aviso.amber{background:var(--amber-soft);border:1px solid #F7D9A8}
+  .aviso.red{background:var(--red-soft);border:1px solid #F3C2BE}
+  .aviso.green{background:var(--green-soft);border:1px solid #BFE6CC}
+  .aviso svg{width:24px;height:24px;flex-shrink:0;margin-top:2px}
+  .aviso b{display:block;font-size:15px;font-weight:600}
+  .aviso p{font-size:13px;color:#4A4E63;margin-top:3px;line-height:1.35}
+  .aviso .cta{margin-top:10px;display:flex;gap:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px}
+  .btn.p{background:var(--ul);color:#fff}
+  .btn.o{background:#fff;border:1px solid var(--line);color:var(--ul)}
+  .btn.sm{padding:8px 12px;font-size:13px}
+  .btn.block{width:100%}
+  .btn.red{background:var(--red);color:#fff}
+
+  /* Credencial */
+  .cred-head{background:var(--ul);color:#fff;height:160px;padding:24px 20px;display:flex;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:8px}
+  .logo .ul{font-family:Georgia,serif;font-style:italic;font-size:42px;line-height:1;font-weight:700}
+  .logo .t{font-size:14px;font-weight:700;line-height:1.1;letter-spacing:.3px}
+  .cred-r{text-align:right;border-left:1px solid rgba(255,255,255,.5);padding-left:18px;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+  .cred-r .date{font-size:17px}
+  .spill{border-radius:999px;padding:8px 22px;font-size:16px;font-weight:500}
+  .spill.y{background:var(--yellow);color:#2b2b2b}.spill.g{background:#5FD28B;color:#163;}
+  .cred-body{padding:26px 28px}
+  .photo{width:170px;height:190px;border-radius:4px;background:linear-gradient(160deg,#D6D9EE,#B6BBE0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:48px;font-weight:600}
+  .f{margin-top:22px}.f .l{color:#A0A4B5;font-size:15px}.f .v{font-size:19px;margin-top:4px}
+  .f2{display:grid;grid-template-columns:1fr 1fr}
+  .legal{color:#A0A4B5;font-size:14px;line-height:1.3;margin-top:28px}
+  .estatus{font-size:12px;color:var(--red);margin-top:6px;font-weight:500}
+
+  /* Notificaciones / listas */
+  .back{display:flex;align-items:center;gap:10px;padding:16px 20px;font-size:18px;background:#fff}
+  .back button{color:var(--ul);font-size:22px;line-height:1}
+  .tabs{display:flex;background:#fff;border-bottom:1px solid var(--line)}
+  .tabs span{flex:1;text-align:center;padding:12px;font-size:15px;color:#444}
+  .tabs span.on{color:var(--ink);border-bottom:2px solid var(--ul)}
+  .noti{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;background:#F0F3FD}
+  .noti.read{background:#fff}
+  .noti .chk{width:20px;height:20px;border-radius:50%;background:var(--ul);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+  .noti.alert .chk{background:var(--red)}
+  .noti b{display:block;font-size:14px;text-transform:uppercase;color:var(--ul);font-weight:600}
+  .noti.alert b{color:var(--red)}
+  .noti p{font-size:13px;color:#333;margin-top:4px;line-height:1.35}
+  .noti .cta{margin-top:8px}
+
+  /* Herramientas */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px}
+  .tool{background:#fff;border-radius:12px;border:1px solid var(--line);height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ul);font-size:12.5px;text-align:center;padding:8px;position:relative}
+  .tool svg{width:40px;height:40px}
+  .tool .badge{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font-size:10px;font-weight:600;border-radius:999px;padding:2px 7px}
+  .ph{font-size:19px;padding:20px 20px 4px;background:#fff}
+
+  /* Adeudos */
+  .amount{font-size:34px;font-weight:700;margin-top:6px}
+  .kv{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .kv:last-child{border:0}.kv span{color:var(--muted)}
+  .tag{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600}
+  .tag.r{background:var(--red-soft);color:var(--red)}.tag.a{background:var(--amber-soft);color:#A5640A}.tag.g{background:var(--green-soft);color:#1B7A3F}
+  .tl{margin-top:8px}
+  .tl .s{display:flex;gap:12px;padding:8px 0;position:relative}
+  .tl .s:not(:last-child)::before{content:"";position:absolute;left:11px;top:30px;bottom:-8px;width:2px;background:var(--line)}
+  .tl .n{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--muted)}
+  .tl .s.done .n{background:var(--red);border-color:var(--red);color:#fff}
+  .tl .s.now .n{border-color:var(--red);color:var(--red)}
+  .tl .s.ok .n{background:var(--green);border-color:var(--green);color:#fff}
+  .tl b{font-size:14px;font-weight:600;display:block}.tl p{font-size:12.5px;color:var(--muted)}
+  .tl .s.done b,.tl .s.now b{color:var(--red)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.4}
+
+  /* Pago */
+  .opt{display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid var(--line);border-radius:12px;margin-top:10px}
+  .opt.on{border-color:var(--ul);background:var(--ul-soft)}
+  .opt .r{width:18px;height:18px;border-radius:50%;border:2px solid #C4C7D9}
+  .opt.on .r{border:5px solid var(--ul)}
+  .opt b{font-size:14px;font-weight:600;display:block}.opt p{font-size:12px;color:var(--muted)}
+  .input{border:1.5px solid var(--line);border-radius:10px;padding:12px;font-size:14px;margin-top:10px;background:#fff;color:#555}
+  .ok-wrap{text-align:center;padding:60px 28px 30px}
+  .ok-wrap .big{width:84px;height:84px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .ok-wrap .big svg{width:44px;height:44px}
+  .ok-wrap h2{font-size:22px;font-weight:600}.ok-wrap p{color:var(--muted);margin-top:8px;line-height:1.4}
+  .spinner{width:36px;height:36px;border:4px solid var(--ul-soft);border-top-color:var(--ul);border-radius:50%;margin:40px auto;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* Drawer */
+  .drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:5}
+  .drawer{position:absolute;top:0;right:0;bottom:0;width:82%;background:#fff;z-index:6;padding:28px 24px;border-radius:12px 0 0 12px}
+  .drawer .x{position:absolute;top:22px;right:22px;width:30px;height:30px;border:2px solid #222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .drawer h2{font-size:22px;font-weight:400}
+  .prof{display:flex;align-items:center;gap:26px;margin:20px 0 26px;padding-bottom:26px;border-bottom:1px solid #C8D2DC}
+  .prof .avatar{width:110px;height:110px;border-radius:14px;font-size:40px}
+  .prof span{color:var(--ink);font-size:19px}.prof span i{color:var(--ul);font-style:normal;margin-left:10px}
+  .mi{display:flex;align-items:center;gap:18px;padding:13px 0;font-size:19px}
+  .mi svg{width:30px;height:30px;color:var(--ul)}
+
+  /* Medallero */
+  .med{background:#232739;min-height:100%;padding:14px;color:#fff}
+  .med .m3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;padding:12px 0}
+  .med .b{text-align:center;font-size:13.5px}
+  .med .c{width:104px;height:104px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-style:italic;font-size:30px;font-weight:700;color:#fff;border:10px solid}
+  .lime{background:#D2F451;border-color:#B9DE3A!important}.teal{background:#5BD9CB;border-color:#45BFB1!important}.coral{background:#E86A5E;border-color:#D4554A!important}
+  .med .c.off{background:#000;border-color:#000!important}
+  .med .mtabs{display:flex;background:#F3F4F9;margin:-14px -14px 0;color:#444}
+  .med .mtabs span{flex:1;text-align:center;padding:14px;font-size:15px}.med .mtabs span.on{color:var(--ink);border-bottom:2px solid var(--ul)}
+
+  /* ====== Lector de acceso (simulación) ====== */
+  .reader{width:300px;background:#fff;border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+  .reader h2{font-size:15px;font-weight:600}
+  .reader p.sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .reader .seg{margin:12px 0;width:100%}.reader .seg button{flex:1}
+  .box{background:#2A2D3B;border-radius:14px;padding:18px;color:#fff;text-align:center;margin-top:6px}
+  .leds{display:flex;justify-content:center;gap:22px;margin-bottom:14px}
+  .led{width:34px;height:34px;border-radius:50%;background:#3a3d4b;border:3px solid #1b1d26;transition:.3s}
+  .led.g.on{background:#3DE07A;box-shadow:0 0 18px #3DE07A}.led.r.on{background:#FF4D45;box-shadow:0 0 18px #FF4D45}
+  .scanwin{height:90px;border-radius:10px;background:#15171f;display:flex;align-items:center;justify-content:center;color:#8A8FA3;font-size:12px;border:2px dashed #444}
+  .scanwin .qrs{width:60px;height:60px;background:repeating-conic-gradient(#ddd 0 25%,#15171f 0 50%) 0 0/10px 10px}
+  .readmsg{margin-top:12px;font-size:13px;line-height:1.35;min-height:54px}
+  .reader .btn{margin-top:12px}
+
+  /* ====== Modo "todas las pantallas" (?all=1) ====== */
+  body.all{background:#fff}
+  .allgrid{display:grid;grid-template-columns:repeat(4,auto);gap:26px 22px;padding:30px;justify-content:center}
+  .allgrid .cell{text-align:center}
+  .allgrid .cell h4{font-size:13px;font-weight:600;margin-bottom:10px;color:#333}
+  .allgrid .cell h4 span{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .allgrid .phone{zoom:.72;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+  .allgrid .phone *{pointer-events:none}
+  .alltitle{text-align:center;padding:30px 20px 0}
+  .alltitle h1{font-size:22px;font-weight:600}.alltitle p{color:var(--muted);font-size:14px;margin-top:4px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   ESTADO
+   ========================================================= */
+const HOY = new Date(2026, 9, 29);          // 29 oct 2026 (fecha de la demo)
+const CURSOS = 2, COSTO_CURSO = 48600;
+const MONTO = CURSOS*COSTO_CURSO;   // mínimo obligatorio: 2 cursos
+const ESC = {                                 // escenarios de prueba
+  sin:    {label:'Sin adeudo (todo pagado)',             dias:null},
+  antes:  {label:'7 días antes de la fecha límite',      dias:-7},
+  vencido:{label:'Pago vencido (3 días)',                 dias:3},
+  d15:    {label:'15 días después · sin estacionamiento', dias:15},
+  d30:    {label:'30 días después · sin reserva de espacios', dias:30},
+};
+const S = { v:1, esc:'vencido', paid:false, screen:'home', drawer:false, pay:{step:0, metodo:'tarjeta'}, lector:'estacionamiento' };
+
+function fmt(d){ return d.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}); }
+function money(n){ return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2})+' MXN'; }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function info(st){
+  // Nivel de restricción según escenario y pago
+  const e = ESC[st.esc];
+  if(st.paid || e.dias===null) return {nivel:0, limite:null, dias:null, estac:true, cafe:true, label:'Sin adeudo'};
+  const limite = addDays(HOY, -e.dias);
+  const nivel = e.dias<0 ? 1 : e.dias<15 ? 2 : e.dias<30 ? 3 : 4;
+  return {nivel, limite, dias:e.dias, estac:nivel<3, cafe:nivel<4,
+          label: nivel===1?'Próximo a vencer':nivel===2?'Vencido':nivel===3?'Vencido · sin estacionamiento':'Vencido · sin estacionamiento ni reserva de espacios'};
+}
+
+/* =========================================================
+   ICONOS
+   ========================================================= */
+const I = {
+  home:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 12h3v8h5v-5h4v5h5v-8h3z"/></svg>',
+  tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M12 11v3"/></svg>',
+  medal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="6"/><path d="m8 14-2 7 6-3 6 3-2-7"/></svg>',
+  mega:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10v4h3l6 4V6L6 10zM16 9a4 4 0 0 1 0 6M18 7a7 7 0 0 1 0 10"/></svg>',
+  id:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c.5-1.5 1.7-2 3-2s2.5.5 3 2M14 10h5M14 14h5"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>',
+  dots:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="#C9830F" stroke-width="2"><path d="M12 3 2 20h20zM12 9v5M12 17.5v.5"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" fill="none" stroke="#D9433B" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>',
+  okc:'<svg viewBox="0 0 24 24" fill="none" stroke="#2DAA5E" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5 9-10"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h2M11 14h2M15 14h2M7 18h2M11 18h2"/></svg>',
+  dollar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9" fill="currentColor" stroke="none"/><path d="M12 6v12M14.5 9.5c0-1-1-2-2.5-2s-2.5 1-2.5 2 1 2 2.5 2 2.5 1 2.5 2-1 2-2.5 2-2.5-1-2.5-2" stroke="#fff"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="4"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M15 10l2 2 4-4"/></svg>',
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg>',
+  bellhop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 17h16M5 17a7 7 0 0 1 14 0M12 10V8M10 8h4"/></svg>',
+  ev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14l2 2 3-3M14 15h3"/></svg>',
+  club:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3"/><circle cx="5" cy="10" r="2.5"/><circle cx="19" cy="10" r="2.5"/><path d="M7 20c0-3 2-5 5-5s5 2 5 5M1 19c0-2 1.5-4 4-4M23 19c0-2-1.5-4-4-4"/></svg>',
+  route:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21v-7M12 14 6 6M12 14l6-8M4 6h4M16 6h4"/></svg>',
+  faq:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16v12H9l-5 4z"/><path d="M10 9a2 2 0 1 1 3 1.7c-.7.4-1 .8-1 1.3M12 14v.5"/></svg>',
+  print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 8V4h10v4M5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2zM7 14h10"/></svg>',
+  finger:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 12a6 6 0 0 1 12 0v6M9 12a3 3 0 0 1 6 0v8M12 12v9M4 9a8 8 0 0 1 16 0"/></svg>',
+  key:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="4"/><path d="M11 11l9 9M17 17l2-2M15 15l2-2"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13l2 2 4-4"/></svg>',
+  out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg>',
+  card:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
+  bank:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9 12 4l9 5H3zM5 9v8M9 9v8M15 9v8M19 9v8M3 20h18"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="#9A9EB0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v3M11 14v.5"/></svg>',
+};
+
+/* =========================================================
+   PANTALLAS
+   ========================================================= */
+function statusBar(){ return `<div class="status"><span>21:24</span><span class="pill">Alejandro</span><span>◢ ◢ 76</span></div>`; }
+
+function navBar(st){
+  const b=(k,s)=>`<button class="${st.screen===k?'on':''}" onclick="go('${k}')">${I[s]}</button>`;
+  return `<div class="nav">${b('home','home')}${b('tools','tools')}${b('medal','medal')}${b('com','mega')}</div>`;
+}
+
+function avisoCard(st){
+  const f=info(st);
+  if(f.nivel===0){
+    if(st.paid) return `<div class="aviso green">${I.okc}<div><b>Colegiatura pagada</b><p>Tu pago del trimestre quedó registrado. Todos tus servicios siguen activos.</p></div></div>`;
+    return '';
+  }
+  if(st.v===1){
+    // VERSIÓN 1: aviso corto, sin explicar consecuencias ni botón de pago directo
+    return `<div class="aviso ${f.nivel===1?'amber':'red'}">${f.nivel===1?I.warn:I.stop}<div>
+      <b>${f.nivel===1?'Tienes un pago próximo':'Tienes un adeudo pendiente'}</b>
+      <p>Colegiatura trimestral · ${money(MONTO)}. Consulta el detalle en Herramientas › Adeudos.</p></div></div>`;
+  }
+  // VERSIÓN 2: días, consecuencia concreta y pagar desde aquí
+  const msg = f.nivel===1 ? `Vence el <b style="display:inline">${fmt(f.limite)}</b> (en ${-f.dias} días). Si no se paga, tu credencial pasará a “trámite pendiente”.`
+            : f.nivel===2 ? `Venció el ${fmt(f.limite)}. Si no pagas antes del ${fmt(addDays(f.limite,15))} se pausará tu acceso al estacionamiento.`
+            : f.nivel===3 ? `Estacionamiento pausado desde el ${fmt(addDays(f.limite,15))}. Si no pagas antes del ${fmt(addDays(f.limite,30))} también se pausará la reserva de espacios (FabLab, impresoras 3D, estudio de audio y biblioteca).`
+            : `Estacionamiento y reserva de espacios pausados (FabLab, impresoras 3D, estudio de audio y biblioteca). Clases, exámenes y entrada al campus siguen igual. Al pagar, todo se libera en automático.`;
+  return `<div class="aviso ${f.nivel===1?'amber':'red'}">${f.nivel===1?I.warn:I.stop}<div>
+    <b>${f.nivel===1?'Colegiatura próxima a vencer':'Colegiatura vencida · '+money(MONTO)}</b>
+    <p>${msg}</p>
+    <div class="cta"><button class="btn p sm" onclick="startPay()">Pagar ahora</button><button class="btn o sm" onclick="go('adeudos')">Ver detalle</button></div></div></div>`;
+}
+
+function homeScreen(st){
+  const f=info(st);
+  return `<div class="topbar"><div class="avatar">A</div><div class="hello"><b>Hola, Alexhia</b><span>matrícula: 23040674</span></div>
+    <div class="ic"><button onclick="go('cred')">${I.id}</button><button onclick="go('noti')">${I.bell}${f.nivel>0?'<i class="dot"></i>':''}</button><button onclick="toggleDrawer(true)">${I.dots}</button></div></div>
+    ${avisoCard(st)}
+    <div class="banner"><h3>Evalúa tus cursos y facilitadores</h3><p>Del 28 de octubre al 6 de noviembre</p>
+      <div class="qr"><div><b>Sigue estos pasos:</b><br>1 Ingresa al portal del estudiante<br>2 Despliega el menú y selecciona Mis encuestas<br>3 Responde por cada curso</div><i></i></div></div>
+    <div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="pad"><div class="ttl">Tus próximas clases</div><div class="card empty">Por el momento no cuentas con próximas clases.</div>
+    <div class="ttl">Calendario académico</div>
+    <div class="cal"><div class="card"><div class="m">Octubre</div><div class="d">29 <small>jue</small></div></div><div class="card"><div class="m">Octubre</div><div class="d">30 <small>vie</small></div></div><div class="card"><div class="m">Octubre</div><div class="d">31 <small>sáb</small></div></div></div></div>
+    <div class="link">Ver calendario académico</div>`;
+}
+
+function credScreen(st){
+  const f=info(st);
+  const activo = f.nivel<2;
+  return `<div class="cred-head"><div class="logo"><span class="ul">ul.</span><span class="t">UNIVERSIDAD<br>DE LA LIBERTAD</span></div>
+    <div class="cred-r"><span class="date">2026-10-29</span><span class="spill ${activo?'g':'y'}">${activo?'Activo':'Inactivo'}</span></div></div>
+    <div class="cred-body"><div class="photo">A</div>
+    <div class="f"><div class="l">Nombre</div><div class="v">Alexhia</div></div>
+    ${!activo ? (st.v===1 ? `<div class="estatus">Credencial inactiva</div>` : `<div class="estatus">Estatus: trámite pendiente</div>`) : ''}
+    <div class="f"><div class="l">Matrícula</div><div class="v">23040674</div></div>
+    <div class="f"><div class="l">Correo institucional</div><div class="v">&nbsp;</div></div>
+    <div class="f f2"><div><div class="l">Generación</div></div><div><div class="l">Fecha de ingreso</div></div></div>
+    <div class="f"><div class="l">Vigencia</div><div class="v">agosto - diciembre 2026</div></div>
+    <p class="legal">Esto no es un documento de acceso a instalaciones y está limitado como medio de identificación digital; acredita como estudiante activo de la universidad. Cualquier uso indebido será sancionado bajo el reglamento institucional vigente.</p>
+    ${(!activo && st.v===2) ? `<button class="btn p block" style="margin-top:18px" onclick="go('adeudos')">Resolver trámite pendiente</button>` : ''}
+    <button class="btn o block" style="margin-top:10px" onclick="go('home')">Volver</button></div>`;
+}
+
+function notiScreen(st){
+  const f=info(st);
+  let pay='';
+  if(f.nivel>0){
+    if(st.v===1){
+      pay=`<div class="noti alert"><div class="chk">!</div><div><b>Adeudo de colegiatura</b><p>Tienes un adeudo de ${money(MONTO)}. Realiza tu pago en el portal del estudiante o acude a Cobranza.</p></div></div>`;
+    } else {
+      const t = f.nivel===1?'Tu colegiatura vence en '+(-f.dias)+' días': f.nivel===2?'Colegiatura vencida':'Servicios pausados por adeudo';
+      const p = f.nivel===1?`Vence el ${fmt(f.limite)}. Paga desde la Wallet en menos de un minuto.`: f.nivel===2?`Venció el ${fmt(f.limite)}. A los 15 días se pausa el estacionamiento; a los 30, la reserva de espacios.`:`Tu adeudo lleva ${f.dias} días. ${f.cafe?'Estacionamiento pausado.':'Estacionamiento y reserva de espacios pausados.'} Al pagar se liberan en automático.`;
+      pay=`<div class="noti alert"><div class="chk">!</div><div><b>${t}</b><p>${p}</p><div class="cta"><button class="btn p sm" onclick="startPay()">Pagar ${money(MONTO)}</button></div></div></div>`;
+    }
+  }
+  if(st.paid) pay=`<div class="noti"><div class="chk">${I.check}</div><div><b style="color:#1B7A3F">Pago recibido</b><p>Tu colegiatura del trimestre quedó pagada. Todos los servicios están activos.</p></div></div>`;
+  return `<div class="back"><button onclick="go('home')">‹</button>Notificaciones</div>
+    <div class="tabs"><span class="on">Todas</span><span>No leídas</span><span>Leídas</span></div>
+    ${pay}
+    <div class="noti read"><div class="chk">${I.check}</div><div><b>¡Asiste al Academic Advising!</b><p>La oferta de cursos, horarios y facilitadores para el trimestre 2027-A únicamente se revelará en el Academic Advising. Si quieres asegurar tu lugar, no faltes.</p></div></div>`;
+}
+
+function toolsScreen(st){
+  const f=info(st);
+  const t=(ic,l,fn,badge)=>`<button class="tool" ${fn?`onclick="${fn}"`:''}>${badge||''}${I[ic]}<span>${l}</span></button>`;
+  return `<div class="ph">Herramientas</div><div class="grid">
+    ${t('cal','Horarios de cursos')}${t('dollar','Adeudos',"go('adeudos')", f.nivel>0?'<span class="badge">1</span>':'')}${t('user','Asistencias')}
+    ${t('ev','Calendario académico')}${t('list','Historial académico')}${t('bellhop','Reserva de espacios')}
+    ${t('ev','Eventos')}${t('club','Clubes')}${t('route','Rutas libres')}
+    ${t('faq','Preguntas frecuentes')}${t('list','Encuestas')}${t('print','Impresora')}
+    <button class="tool" style="font-family:Georgia,serif;font-style:italic;font-size:16px">ul. GALERÍA</button>
+    <button class="tool" style="color:#111;font-weight:700;font-size:13px">CONECTA EN LIBERTAD</button></div>`;
+}
+
+function adeudosScreen(st){
+  const f=info(st);
+  const tag = f.nivel===0?'<span class="tag g">Pagado</span>':f.nivel===1?'<span class="tag a">Por vencer</span>':'<span class="tag r">Vencido</span>';
+  let body='';
+  if(st.v===1){
+    body = `<div class="card" style="margin-top:14px">
+      <div class="kv"><span>Concepto</span>Colegiatura 2026-C (${CURSOS} cursos)</div>
+      <div class="kv"><span>Monto</span>${f.nivel===0?'$0.00 MXN':money(MONTO)}</div>
+      <div class="kv"><span>Fecha límite</span>${f.limite?fmt(f.limite):'—'}</div>
+      <div class="kv"><span>Estado</span>${tag}</div></div>
+      ${f.nivel>0?`<p class="note">Los adeudos vencidos pueden generar restricciones en servicios del campus. Para más información acude a Cobranza.</p>
+      <button class="btn p block" style="margin-top:16px" onclick="startPay()">Ir a pagar</button>`:''}`;
+  } else {
+    const L = f.limite || addDays(HOY,7);
+    const step=(n,cls,b,p)=>`<div class="s ${cls}"><div class="n">${cls==='done'||cls==='ok'?'✓':n}</div><div><b>${b}</b><p>${p}</p></div></div>`;
+    const c=k=> f.nivel===0 ? 'ok' : f.nivel>k ? 'done' : f.nivel===k ? 'now' : '';
+    body = `<div class="card" style="margin-top:14px">
+      <div style="font-size:13px;color:var(--muted)">Colegiatura trimestral 2026-C · ${CURSOS} cursos × ${money(COSTO_CURSO).replace(' MXN','')}</div>
+      <div class="amount">${f.nivel===0?'$0.00':money(MONTO).replace(' MXN','')}</div>
+      <div style="margin-top:6px">${tag} <span style="font-size:13px;color:var(--muted);margin-left:6px">${f.limite?(f.nivel===1?'vence el ':'venció el ')+fmt(f.limite):''}</span></div>
+      ${f.nivel>0?`<button class="btn p block" style="margin-top:16px" onclick="startPay()">Pagar ${money(MONTO)}</button>`:''}</div>
+      <div class="card" style="margin-top:12px"><div style="font-weight:600;font-size:15px;margin-bottom:6px">Qué pasa si no se paga</div>
+      <div class="tl">
+        ${step(1,c(1),'7 días antes','Recordatorio en la Wallet · '+fmt(addDays(L,-7)))}
+        ${step(2,c(2),'Fecha límite','Credencial en “trámite pendiente” · '+fmt(L))}
+        ${step(3,c(3),'15 días después','Sin acceso al estacionamiento · '+fmt(addDays(L,15)))}
+        ${step(4,c(4),'30 días después','Sin reserva de espacios: FabLab, impresoras 3D, estudio de audio y biblioteca · '+fmt(addDays(L,30)))}
+      </div>
+      <p class="note">Clases, exámenes y la entrada al campus no se ven afectados. Al pagar, todos los servicios se liberan en automático y nadie más ve tu estatus.</p></div>`;
+  }
+  return `<div class="back"><button onclick="go('tools')">‹</button>Adeudos</div><div class="pad" style="padding-bottom:24px">${body}</div>`;
+}
+
+function payScreen(st){
+  const p=st.pay;
+  if(p.step===1){
+    return `<div class="back"><button onclick="go('adeudos')">‹</button>Pagar colegiatura</div><div class="pad">
+      <div class="card" style="margin-top:14px"><div style="font-size:13px;color:var(--muted)">Total a pagar · ${CURSOS} cursos × ${money(COSTO_CURSO).replace(' MXN','')}</div><div class="amount">${money(MONTO)}</div></div>
+      <div class="ttl" style="font-size:16px">Método de pago</div>
+      <div class="opt ${p.metodo==='tarjeta'?'on':''}" onclick="setMetodo('tarjeta')"><span class="r"></span>${I.card}<div><b>Tarjeta de crédito o débito</b><p>Se acredita al momento</p></div></div>
+      <div class="opt ${p.metodo==='spei'?'on':''}" onclick="setMetodo('spei')"><span class="r"></span>${I.bank}<div><b>Transferencia SPEI</b><p>Se acredita en minutos con tu referencia</p></div></div>
+      ${p.metodo==='tarjeta'?`<div class="input">•••• •••• •••• 4821 &nbsp;·&nbsp; 09/28</div>`:`<div class="input">CLABE 646180 1234 5678 9012 &nbsp;·&nbsp; Ref. 23040674</div>`}
+      <button class="btn p block" style="margin-top:18px" onclick="confirmPay()">Confirmar pago</button>
+      ${st.v===2?`<p class="note" style="text-align:center">Al confirmar, tu credencial y tus servicios se reactivan en automático.</p>`:''}</div>`;
+  }
+  if(p.step===2){ return `<div class="back"><span></span>Procesando</div><div class="spinner"></div><p class="empty">Confirmando tu pago…</p>`; }
+  return `<div class="ok-wrap"><div class="big">${I.check}</div><h2>¡Pago exitoso!</h2>
+    <p>${st.v===1?'Tu pago fue registrado. Cobranza actualizará tu estatus en las próximas 24 horas.':'Colegiatura 2026-C pagada. Tu credencial vuelve a estar activa; estacionamiento y reserva de espacios quedaron liberados.'}</p>
+    <button class="btn p block" style="margin-top:28px" onclick="go('home')">Volver al inicio</button></div>`;
+}
+
+function medalScreen(){
+  const c=(cls,t)=>`<div class="b"><div class="c ${cls}">${cls==='off'?'':'ul.'}</div>${t}</div>`;
+  return `<div class="ph" style="display:flex;justify-content:space-between;align-items:center">Medallero <span style="background:var(--ul);color:#fff;border-radius:10px;width:46px;height:46px;display:flex;align-items:center;justify-content:center">${I.medal.replace('currentColor','#fff')}</span></div>
+    <div class="med"><div class="mtabs"><span class="on">Insignias</span><span>Certificados</span><span>Títulos</span></div><div class="m3">
+    ${c('lime','Foundational Principles of')}${c('teal','Mathematics Applied to Business')}${c('coral','Expressive Clarity')}
+    ${c('lime','History of Business')}${c('lime','Money and the Banking System')}${c('coral','Interpretation, Communication,')}
+    ${c('teal','Principles of Operations')}${c('off','')}${c('off','')}${c('off','')}${c('off','')}${c('off','')}</div></div>`;
+}
+function comScreen(){ return `<div class="ph">Comunicados</div><div style="text-align:center;padding:170px 30px 0;font-size:14px;font-weight:500">Por el momento no cuentas con nuevos comunicados.<div style="margin:30px auto 0;width:90px">${I.search}</div></div>`; }
+
+function drawer(){
+  const m=(ic,l)=>`<div class="mi">${I[ic]}${l}</div>`;
+  return `<div class="drawer-bg" onclick="toggleDrawer(false)"></div><div class="drawer"><button class="x" onclick="toggleDrawer(false)">✕</button><h2>Hola,</h2>
+    <div class="prof"><div class="avatar">A</div><span>Mi perfil<i>›</i></span></div>
+    ${m('finger','Biométricos')}${m('key','Contraseña')}${m('bell','Notificaciones')}${m('info','Acerca de')}${m('doc','Documentos')}${m('out','Cerrar sesión')}</div>`;
+}
+
+function screen(st){
+  const map={home:homeScreen,cred:credScreen,noti:notiScreen,tools:toolsScreen,adeudos:adeudosScreen,pay:payScreen,medal:medalScreen,com:comScreen};
+  return map[st.screen](st);
+}
+function phone(st){
+  const navScreens={home:1,tools:1,medal:1,com:1};
+  return `<div class="phone">${statusBar()}<div class="screen">${screen(st)}</div>${navBar({screen:navScreens[st.screen]?st.screen:(st.screen==='adeudos'||st.screen==='pay'?'tools':'home')})}${st.drawer?drawer():''}</div>`;
+}
+
+/* =========================================================
+   LECTOR DE ACCESO (simulación del modelo 3D)
+   ========================================================= */
+function readerPanel(st){
+  const f=info(st);
+  const ok = st.lector==='estacionamiento' ? f.estac : f.cafe;
+  const msg = st.scanned===undefined ? 'Escanea la credencial digital para ver el resultado.'
+            : ok ? `<span style="color:#3DE07A;font-weight:600">Acceso permitido.</span> Credencial vigente.`
+            : (st.v===1 ? `<span style="color:#FF4D45;font-weight:600">Acceso denegado.</span>` : `<span style="color:#FF4D45;font-weight:600">Acceso pausado por trámite pendiente.</span> Paga desde la Wallet o pasa a Cobranza; se libera en automático.`);
+  return `<div class="reader"><h2>Lector de acceso (simulación)</h2><p class="sub">Representa la caja impresa en 3D con dos luces, en el estacionamiento o en la entrada del FabLab.</p>
+    <div class="seg"><button class="${st.lector==='estacionamiento'?'on':''}" onclick="setLector('estacionamiento')">Estacionamiento</button><button class="${st.lector==='cafeteria'?'on':''}" onclick="setLector('cafeteria')">FabLab / espacios</button></div>
+    <div class="box"><div class="leds"><span class="led g ${st.scanned&&ok?'on':''}"></span><span class="led r ${st.scanned&&!ok?'on':''}"></span></div>
+    <div class="scanwin">${st.scanned?'<div class="qrs"></div>':'ventana de escaneo'}</div><div class="readmsg">${msg}</div></div>
+    <button class="btn p block" onclick="scan()">Escanear credencial</button></div>`;
+}
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+const app=document.getElementById('app');
+const params=new URLSearchParams(location.search);
+
+function render(){
+  app.innerHTML = `<div class="lab">
+    <div class="lab-head"><h1>UL Wallet · Pagos a tiempo <span>· prototipo interactivo</span></h1>
+      <div class="seg"><button class="${S.v===1?'on':''}" onclick="setV(1)">Versión 1</button><button class="${S.v===2?'on':''}" onclick="setV(2)">Versión 2</button></div></div>
+    <div class="controls"><label>Escenario de prueba:</label><select onchange="setEsc(this.value)">${Object.entries(ESC).map(([k,e])=>`<option value="${k}" ${S.esc===k?'selected':''}>${e.label}</option>`).join('')}</select>
+      <button class="reset" onclick="resetAll()">Reiniciar</button>
+      <span style="color:var(--muted)">Fecha de la demo: ${fmt(HOY)}</span></div>
+    <div class="stage">${phone(S)}${readerPanel(S)}</div></div>`;
+}
+
+/* acciones */
+function go(s){ S.screen=s; S.drawer=false; if(s!=='pay') S.pay.step=0; render(); }
+function toggleDrawer(v){ S.drawer=v; render(); }
+function setV(v){ S.v=v; S.scanned=undefined; render(); }
+function setEsc(e){ S.esc=e; S.paid=false; S.scanned=undefined; S.screen='home'; render(); }
+function resetAll(){ S.paid=false; S.screen='home'; S.pay.step=0; S.scanned=undefined; render(); }
+function startPay(){ S.screen='pay'; S.pay.step=1; render(); }
+function setMetodo(m){ S.pay.metodo=m; render(); }
+function confirmPay(){ S.pay.step=2; render(); setTimeout(()=>{ S.paid=true; S.pay.step=3; S.scanned=undefined; render(); }, 1400); }
+function setLector(l){ S.lector=l; S.scanned=undefined; render(); }
+function scan(){ S.scanned=true; render(); }
+
+/* =========================================================
+   MODO "TODAS LAS PANTALLAS": index.html?all=1&v=2
+   ========================================================= */
+function renderAll(){
+  const v = parseInt(params.get('v')||'1');
+  document.body.classList.add('all');
+  const shots = [
+    ['Inicio','aviso 7 días antes',           {esc:'antes',   screen:'home'}],
+    ['Inicio','pago vencido',                 {esc:'vencido', screen:'home'}],
+    ['Notificaciones','aviso de cobro',       {esc:'vencido', screen:'noti'}],
+    ['Credencial','estatus por adeudo',       {esc:'d15',     screen:'cred'}],
+    ['Herramientas','acceso a Adeudos',       {esc:'vencido', screen:'tools'}],
+    ['Adeudos','detalle y restricciones',     {esc:'d15',     screen:'adeudos'}],
+    ['Pago','método de pago',                 {esc:'d15',     screen:'pay', pay:{step:1,metodo:'tarjeta'}}],
+    ['Pago exitoso','servicios liberados',    {esc:'d15',     screen:'pay', pay:{step:3,metodo:'tarjeta'}}],
+    ['Inicio','después de pagar',             {esc:'d15',     screen:'home', paid:true}],
+    ['Menú','perfil y ajustes',               {esc:'sin',     screen:'home', drawer:true}],
+    ['Medallero','sin cambios',               {esc:'sin',     screen:'medal'}],
+    ['Comunicados','sin cambios',             {esc:'sin',     screen:'com'}],
+  ];
+  app.innerHTML = `<div class="alltitle"><h1>UL Wallet · Pagos a tiempo — Versión ${v}</h1><p>${v===1?'Prototipo 1: aviso básico, pago por portal externo y restricciones explicadas en texto.':'Prototipo 2: aviso con fechas y consecuencias, pago dentro de la app en dos pasos, línea de tiempo de restricciones (estacionamiento a los 15 días, reserva de espacios a los 30) y liberación automática.'}</p></div>
+    <div class="allgrid">${shots.map(([t,sub,o])=>`<div class="cell"><h4>${t}<span>${sub}</span></h4>${phone(Object.assign({v, paid:false, drawer:false, pay:{step:0,metodo:'tarjeta'}}, o))}</div>`).join('')}</div>`;
+}
+
+if(params.get('all')) renderAll(); else render();
+</script>
+</body>
+</html>
