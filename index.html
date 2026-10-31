@@ -210,11 +210,11 @@ const HOY = new Date(2026, 9, 29);          // 29 oct 2026 (fecha de la demo)
 const CURSOS = 2, COSTO_CURSO = 48600;
 const MONTO = CURSOS*COSTO_CURSO;   // mínimo obligatorio: 2 cursos
 const ESC = {                                 // escenarios de prueba
-  sin:    {label:'Sin adeudo (todo pagado)',             dias:null},
+  sin:    {label:'Sin adeudo',             dias:null},
   antes:  {label:'7 días antes de la fecha límite',      dias:-7},
-  vencido:{label:'Pago vencido (3 días)',                 dias:3},
-  d15:    {label:'15 días después · sin estacionamiento', dias:15},
-  d30:    {label:'30 días después · tercera restricción', dias:30},
+  vencido:{label:'Pago vencido',                 dias:3},
+  d15:    {label:'15 días después', dias:15},
+  d30:    {label:'30 días después', dias:30},
 };
 const S = { v:1, esc:'vencido', paid:false, screen:'home', drawer:false, pay:{step:0, metodo:'tarjeta'}, lector:'estacionamiento' };
 
@@ -369,7 +369,7 @@ function adeudosScreen(st){
   let body='';
   if(st.v===1){
     body = `<div class="card" style="margin-top:14px">
-      <div class="kv"><span>Concepto</span>Colegiatura 2026-C (${CURSOS} cursos)</div>
+      <div class="kv"><span>Concepto</span>Colegiatura trimestral 2026-C</div>
       <div class="kv"><span>Monto</span>${f.nivel===0?'$0.00 MXN':money(MONTO)}</div>
       <div class="kv"><span>Fecha límite</span>${f.limite?fmt(f.limite):'—'}</div>
       <div class="kv"><span>Estado</span>${tag}</div></div>
@@ -380,7 +380,7 @@ function adeudosScreen(st){
     const step=(n,cls,b,p)=>`<div class="s ${cls}"><div class="n">${cls==='done'||cls==='ok'?'✓':n}</div><div><b>${b}</b><p>${p}</p></div></div>`;
     const c=k=> f.nivel===0 ? 'ok' : f.nivel>k ? 'done' : f.nivel===k ? 'now' : '';
     body = `<div class="card" style="margin-top:14px">
-      <div style="font-size:13px;color:var(--muted)">Colegiatura trimestral 2026-C · ${CURSOS} cursos × ${money(COSTO_CURSO).replace(' MXN','')}</div>
+      <div style="font-size:13px;color:var(--muted)">Colegiatura trimestral 2026-C</div>
       <div class="amount">${f.nivel===0?'$0.00':money(MONTO).replace(' MXN','')}</div>
       <div style="margin-top:6px">${tag} <span style="font-size:13px;color:var(--muted);margin-left:6px">${f.limite?(f.nivel===1?'vence el ':'venció el ')+fmt(f.limite):''}</span></div>
       ${f.nivel>0?`<button class="btn p block" style="margin-top:16px" onclick="startPay()">Pagar ${money(MONTO)}</button>`:''}</div>
@@ -400,7 +400,7 @@ function payScreen(st){
   const p=st.pay;
   if(p.step===1){
     return `<div class="back"><button onclick="go('adeudos')">‹</button>Pagar colegiatura</div><div class="pad">
-      <div class="card" style="margin-top:14px"><div style="font-size:13px;color:var(--muted)">Total a pagar · ${CURSOS} cursos × ${money(COSTO_CURSO).replace(' MXN','')}</div><div class="amount">${money(MONTO)}</div></div>
+      <div class="card" style="margin-top:14px"><div style="font-size:13px;color:var(--muted)">Total a pagar</div><div class="amount">${money(MONTO)}</div></div>
       <div class="ttl" style="font-size:16px">Método de pago</div>
       <div class="opt ${p.metodo==='tarjeta'?'on':''}" onclick="setMetodo('tarjeta')"><span class="r"></span>${I.card}<div><b>Tarjeta de crédito o débito</b><p>Se acredita al momento</p></div></div>
       <div class="opt ${p.metodo==='spei'?'on':''}" onclick="setMetodo('spei')"><span class="r"></span>${I.bank}<div><b>Transferencia SPEI</b><p>Se acredita en minutos con tu referencia</p></div></div>
@@ -449,7 +449,7 @@ function readerPanel(st){
   const msg = st.scanned===undefined ? 'Escanea la credencial digital para ver el resultado.'
             : ok ? `<span style="color:#3DE07A;font-weight:600">Acceso permitido.</span> Credencial vigente.`
             : (st.v===1 ? `<span style="color:#FF4D45;font-weight:600">Acceso denegado.</span>` : `<span style="color:#FF4D45;font-weight:600">Acceso pausado por trámite pendiente.</span> Paga desde la Wallet o pasa a Cobranza; se libera en automático.`);
-  return `<div class="reader"><h2>Lector de acceso (simulación)</h2><p class="sub">Representa la caja impresa en 3D con dos luces, en el estacionamiento o en la ${st.v===1?'cafetería':'entrada del FabLab'}.</p>
+  return `<div class="reader"><h2>Lector de acceso</h2>
     <div class="seg"><button class="${st.lector==='estacionamiento'?'on':''}" onclick="setLector('estacionamiento')">Estacionamiento</button><button class="${st.lector==='cafeteria'?'on':''}" onclick="setLector('cafeteria')">${st.v===1?'Cafetería':'FabLab / espacios'}</button></div>
     <div class="box"><div class="leds"><span class="led g ${st.scanned&&ok?'on':''}"></span><span class="led r ${st.scanned&&!ok?'on':''}"></span></div>
     <div class="scanwin">${st.scanned?'<div class="qrs"></div>':'ventana de escaneo'}</div><div class="readmsg">${msg}</div></div>
@@ -464,11 +464,11 @@ const params=new URLSearchParams(location.search);
 
 function render(){
   app.innerHTML = `<div class="lab">
-    <div class="lab-head"><h1>UL Wallet · Pagos a tiempo <span>· prototipo interactivo</span></h1>
+    <div class="lab-head"><h1>UL Wallet · Pagos a tiempo</h1>
       <div class="seg"><button class="${S.v===1?'on':''}" onclick="setV(1)">Versión 1</button><button class="${S.v===2?'on':''}" onclick="setV(2)">Versión 2</button></div></div>
     <div class="controls"><label>Escenario de prueba:</label><select onchange="setEsc(this.value)">${Object.entries(ESC).map(([k,e])=>`<option value="${k}" ${S.esc===k?'selected':''}>${e.label}</option>`).join('')}</select>
       <button class="reset" onclick="resetAll()">Reiniciar</button>
-      <span style="color:var(--muted)">Fecha de la demo: ${fmt(HOY)}</span></div>
+      </div>
     <div class="stage">${phone(S)}${readerPanel(S)}</div></div>`;
 }
 
@@ -504,7 +504,7 @@ function renderAll(){
     ['Medallero','sin cambios',               {esc:'sin',     screen:'medal'}],
     ['Comunicados','sin cambios',             {esc:'sin',     screen:'com'}],
   ];
-  app.innerHTML = `<div class="alltitle"><h1>UL Wallet · Pagos a tiempo — Versión ${v}</h1><p>${v===1?'Prototipo 1: aviso básico, pago por portal externo, restricciones en texto y cafetería como tercera restricción.':'Prototipo 2: aviso con fechas y consecuencias, pago dentro de la app en dos pasos, línea de tiempo de restricciones, la cafetería se sustituye por reserva de espacios (FabLab, 3D, audio, biblioteca) y liberación automática.'}</p></div>
+  app.innerHTML = `<div class="alltitle"><h1>UL Wallet · Pagos a tiempo · Versión ${v}</h1></div>
     <div class="allgrid">${shots.map(([t,sub,o])=>`<div class="cell"><h4>${t}<span>${sub}</span></h4>${phone(Object.assign({v, paid:false, drawer:false, pay:{step:0,metodo:'tarjeta'}}, o))}</div>`).join('')}</div>`;
 }
 
