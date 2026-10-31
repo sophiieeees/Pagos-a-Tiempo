@@ -214,10 +214,12 @@ const ESC = {                                 // escenarios de prueba
   antes:  {label:'7 días antes de la fecha límite',      dias:-7},
   vencido:{label:'Pago vencido (3 días)',                 dias:3},
   d15:    {label:'15 días después · sin estacionamiento', dias:15},
-  d30:    {label:'30 días después · sin reserva de espacios', dias:30},
+  d30:    {label:'30 días después · tercera restricción', dias:30},
 };
 const S = { v:1, esc:'vencido', paid:false, screen:'home', drawer:false, pay:{step:0, metodo:'tarjeta'}, lector:'estacionamiento' };
 
+const R30 = st => st.v===1 ? 'cafetería' : 'reserva de espacios';   // restricción a los 30 días: V1 cafetería, V2 espacios
+const R30L = st => st.v===1 ? 'cafetería' : 'reserva de espacios (FabLab, impresoras 3D, estudio de audio y biblioteca)';
 function fmt(d){ return d.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}); }
 function money(n){ return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2})+' MXN'; }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
@@ -228,7 +230,7 @@ function info(st){
   const limite = addDays(HOY, -e.dias);
   const nivel = e.dias<0 ? 1 : e.dias<15 ? 2 : e.dias<30 ? 3 : 4;
   return {nivel, limite, dias:e.dias, estac:nivel<3, cafe:nivel<4,
-          label: nivel===1?'Próximo a vencer':nivel===2?'Vencido':nivel===3?'Vencido · sin estacionamiento':'Vencido · sin estacionamiento ni reserva de espacios'};
+          label: nivel===1?'Próximo a vencer':nivel===2?'Vencido':nivel===3?'Vencido · sin estacionamiento':'Vencido · sin estacionamiento ni '+R30(st)};
 }
 
 /* =========================================================
@@ -291,8 +293,8 @@ function avisoCard(st){
   // VERSIÓN 2: días, consecuencia concreta y pagar desde aquí
   const msg = f.nivel===1 ? `Vence el <b style="display:inline">${fmt(f.limite)}</b> (en ${-f.dias} días). Si no se paga, tu credencial pasará a “trámite pendiente”.`
             : f.nivel===2 ? `Venció el ${fmt(f.limite)}. Si no pagas antes del ${fmt(addDays(f.limite,15))} se pausará tu acceso al estacionamiento.`
-            : f.nivel===3 ? `Estacionamiento pausado desde el ${fmt(addDays(f.limite,15))}. Si no pagas antes del ${fmt(addDays(f.limite,30))} también se pausará la reserva de espacios (FabLab, impresoras 3D, estudio de audio y biblioteca).`
-            : `Estacionamiento y reserva de espacios pausados (FabLab, impresoras 3D, estudio de audio y biblioteca). Clases, exámenes y entrada al campus siguen igual. Al pagar, todo se libera en automático.`;
+            : f.nivel===3 ? `Estacionamiento pausado desde el ${fmt(addDays(f.limite,15))}. Si no pagas antes del ${fmt(addDays(f.limite,30))} también se pausará la ${R30L(st)}.`
+            : `Estacionamiento y ${R30L(st)} pausados. Clases, exámenes y entrada al campus siguen igual. Al pagar, todo se libera en automático.`;
   return `<div class="aviso ${f.nivel===1?'amber':'red'}">${f.nivel===1?I.warn:I.stop}<div>
     <b>${f.nivel===1?'Colegiatura próxima a vencer':'Colegiatura vencida · '+money(MONTO)}</b>
     <p>${msg}</p>
@@ -338,7 +340,7 @@ function notiScreen(st){
       pay=`<div class="noti alert"><div class="chk">!</div><div><b>Adeudo de colegiatura</b><p>Tienes un adeudo de ${money(MONTO)}. Realiza tu pago en el portal del estudiante o acude a Cobranza.</p></div></div>`;
     } else {
       const t = f.nivel===1?'Tu colegiatura vence en '+(-f.dias)+' días': f.nivel===2?'Colegiatura vencida':'Servicios pausados por adeudo';
-      const p = f.nivel===1?`Vence el ${fmt(f.limite)}. Paga desde la Wallet en menos de un minuto.`: f.nivel===2?`Venció el ${fmt(f.limite)}. A los 15 días se pausa el estacionamiento; a los 30, la reserva de espacios.`:`Tu adeudo lleva ${f.dias} días. ${f.cafe?'Estacionamiento pausado.':'Estacionamiento y reserva de espacios pausados.'} Al pagar se liberan en automático.`;
+      const p = f.nivel===1?`Vence el ${fmt(f.limite)}. Paga desde la Wallet en menos de un minuto.`: f.nivel===2?`Venció el ${fmt(f.limite)}. A los 15 días se pausa el estacionamiento; a los 30, la ${R30(st)}.`:`Tu adeudo lleva ${f.dias} días. ${f.cafe?'Estacionamiento pausado.':'Estacionamiento y '+R30(st)+' pausados.'} Al pagar se liberan en automático.`;
       pay=`<div class="noti alert"><div class="chk">!</div><div><b>${t}</b><p>${p}</p><div class="cta"><button class="btn p sm" onclick="startPay()">Pagar ${money(MONTO)}</button></div></div></div>`;
     }
   }
@@ -371,7 +373,7 @@ function adeudosScreen(st){
       <div class="kv"><span>Monto</span>${f.nivel===0?'$0.00 MXN':money(MONTO)}</div>
       <div class="kv"><span>Fecha límite</span>${f.limite?fmt(f.limite):'—'}</div>
       <div class="kv"><span>Estado</span>${tag}</div></div>
-      ${f.nivel>0?`<p class="note">Los adeudos vencidos pueden generar restricciones en servicios del campus. Para más información acude a Cobranza.</p>
+      ${f.nivel>0?`<p class="note">Los adeudos vencidos generan restricciones: a los 15 días se suspende el estacionamiento y a los 30 días la cafetería. Para más información acude a Cobranza.</p>
       <button class="btn p block" style="margin-top:16px" onclick="startPay()">Ir a pagar</button>`:''}`;
   } else {
     const L = f.limite || addDays(HOY,7);
@@ -387,7 +389,7 @@ function adeudosScreen(st){
         ${step(1,c(1),'7 días antes','Recordatorio en la Wallet · '+fmt(addDays(L,-7)))}
         ${step(2,c(2),'Fecha límite','Credencial en “trámite pendiente” · '+fmt(L))}
         ${step(3,c(3),'15 días después','Sin acceso al estacionamiento · '+fmt(addDays(L,15)))}
-        ${step(4,c(4),'30 días después','Sin reserva de espacios: FabLab, impresoras 3D, estudio de audio y biblioteca · '+fmt(addDays(L,30)))}
+        ${step(4,c(4),'30 días después','Sin '+R30L(st)+' · '+fmt(addDays(L,30)))}
       </div>
       <p class="note">Clases, exámenes y la entrada al campus no se ven afectados. Al pagar, todos los servicios se liberan en automático y nadie más ve tu estatus.</p></div>`;
   }
@@ -408,7 +410,7 @@ function payScreen(st){
   }
   if(p.step===2){ return `<div class="back"><span></span>Procesando</div><div class="spinner"></div><p class="empty">Confirmando tu pago…</p>`; }
   return `<div class="ok-wrap"><div class="big">${I.check}</div><h2>¡Pago exitoso!</h2>
-    <p>${st.v===1?'Tu pago fue registrado. Cobranza actualizará tu estatus en las próximas 24 horas.':'Colegiatura 2026-C pagada. Tu credencial vuelve a estar activa; estacionamiento y reserva de espacios quedaron liberados.'}</p>
+    <p>${st.v===1?'Tu pago fue registrado. Cobranza actualizará tu estatus en las próximas 24 horas.':'Colegiatura 2026-C pagada. Tu credencial vuelve a estar activa; estacionamiento y ${R30(st)} quedaron liberados.'}</p>
     <button class="btn p block" style="margin-top:28px" onclick="go('home')">Volver al inicio</button></div>`;
 }
 
@@ -447,8 +449,8 @@ function readerPanel(st){
   const msg = st.scanned===undefined ? 'Escanea la credencial digital para ver el resultado.'
             : ok ? `<span style="color:#3DE07A;font-weight:600">Acceso permitido.</span> Credencial vigente.`
             : (st.v===1 ? `<span style="color:#FF4D45;font-weight:600">Acceso denegado.</span>` : `<span style="color:#FF4D45;font-weight:600">Acceso pausado por trámite pendiente.</span> Paga desde la Wallet o pasa a Cobranza; se libera en automático.`);
-  return `<div class="reader"><h2>Lector de acceso (simulación)</h2><p class="sub">Representa la caja impresa en 3D con dos luces, en el estacionamiento o en la entrada del FabLab.</p>
-    <div class="seg"><button class="${st.lector==='estacionamiento'?'on':''}" onclick="setLector('estacionamiento')">Estacionamiento</button><button class="${st.lector==='cafeteria'?'on':''}" onclick="setLector('cafeteria')">FabLab / espacios</button></div>
+  return `<div class="reader"><h2>Lector de acceso (simulación)</h2><p class="sub">Representa la caja impresa en 3D con dos luces, en el estacionamiento o en la ${st.v===1?'cafetería':'entrada del FabLab'}.</p>
+    <div class="seg"><button class="${st.lector==='estacionamiento'?'on':''}" onclick="setLector('estacionamiento')">Estacionamiento</button><button class="${st.lector==='cafeteria'?'on':''}" onclick="setLector('cafeteria')">${st.v===1?'Cafetería':'FabLab / espacios'}</button></div>
     <div class="box"><div class="leds"><span class="led g ${st.scanned&&ok?'on':''}"></span><span class="led r ${st.scanned&&!ok?'on':''}"></span></div>
     <div class="scanwin">${st.scanned?'<div class="qrs"></div>':'ventana de escaneo'}</div><div class="readmsg">${msg}</div></div>
     <button class="btn p block" onclick="scan()">Escanear credencial</button></div>`;
@@ -502,7 +504,7 @@ function renderAll(){
     ['Medallero','sin cambios',               {esc:'sin',     screen:'medal'}],
     ['Comunicados','sin cambios',             {esc:'sin',     screen:'com'}],
   ];
-  app.innerHTML = `<div class="alltitle"><h1>UL Wallet · Pagos a tiempo — Versión ${v}</h1><p>${v===1?'Prototipo 1: aviso básico, pago por portal externo y restricciones explicadas en texto.':'Prototipo 2: aviso con fechas y consecuencias, pago dentro de la app en dos pasos, línea de tiempo de restricciones (estacionamiento a los 15 días, reserva de espacios a los 30) y liberación automática.'}</p></div>
+  app.innerHTML = `<div class="alltitle"><h1>UL Wallet · Pagos a tiempo — Versión ${v}</h1><p>${v===1?'Prototipo 1: aviso básico, pago por portal externo, restricciones en texto y cafetería como tercera restricción.':'Prototipo 2: aviso con fechas y consecuencias, pago dentro de la app en dos pasos, línea de tiempo de restricciones, la cafetería se sustituye por reserva de espacios (FabLab, 3D, audio, biblioteca) y liberación automática.'}</p></div>
     <div class="allgrid">${shots.map(([t,sub,o])=>`<div class="cell"><h4>${t}<span>${sub}</span></h4>${phone(Object.assign({v, paid:false, drawer:false, pay:{step:0,metodo:'tarjeta'}}, o))}</div>`).join('')}</div>`;
 }
 
